@@ -1,0 +1,61 @@
+@startuml
+entity User {
+  *id : UUID
+  --
+  phone
+  email
+  name
+  role
+  language
+  created_at
+}
+entity ReporterProfile {
+  *id : UUID
+  --
+  user_id : UUID
+  anonymized_token
+}
+entity Report {
+  *id : UUID
+  --
+  reference_number
+  reporter_profile_id
+  category_id
+  description
+  incident_date
+  status
+  anonymous : boolean
+  created_at
+}
+entity Case {
+  *id : UUID
+  --
+  report_id : UUID
+  case_officer_id : UUID
+  priority
+  resolution
+  closed_at
+}
+entity Attachment {
+  *id : UUID
+  --
+  report_id : UUID
+  file_type
+  storage_path
+  uploaded_at
+}
+entity CaseUpdate {
+  *id : UUID
+  --
+  case_id : UUID
+  user_id : UUID
+  message
+  update_type
+  created_at
+}
+User ||--o{ ReporterProfile : "may have"
+ReporterProfile ||--o{ Report : "reports"
+Report ||--o| Case : "becomes"
+Report ||--o{ Attachment : "has"
+Case ||--o{ CaseUpdate : "has"
+@enduml

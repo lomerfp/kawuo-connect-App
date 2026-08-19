@@ -1,0 +1,28 @@
+# Byte & OS artifacts
+.DS_Store
+Thumbs.db
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Node
+node_modules/
+
+# Flutter
+.build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+
+# IDEs
+.vscode/
+.idea/
+
+# Misc
+*.log
+.env

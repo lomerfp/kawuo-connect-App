@@ -1,0 +1,278 @@
+openapi: 3.0.3
+info:
+  title: KAWUO Connect API
+  version: '1.0.0'
+  description: "Initial OpenAPI spec for KAWUO Connect (MVP) — auth, sync, reports, attachments, cases, admin."
+servers:
+  - url: https://api.kawuo.example.com/api/v1
+security:
+  - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        phone:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+    ReportInput:
+      type: object
+      required: [category_id, description]
+      properties:
+        client_id:
+          type: string
+          description: "Client-generated UUID for idempotency when offline"
+        category_id:
+          type: string
+        description:
+          type: string
+        incident_date:
+          type: string
+          format: date-time
+        district:
+          type: string
+        subcounty:
+          type: string
+        parish:
+          type: string
+        village:
+          type: string
+        gps_lat:
+          type: number
+          format: float
+        gps_lng:
+          type: number
+          format: float
+        anonymous:
+          type: boolean
+        contact_allowed:
+          type: boolean
+        preferred_contact_method:
+          type: string
+    ReportResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        reference_number:
+          type: string
+        status:
+          type: string
+paths:
+  /auth/register:
+    post:
+      summary: Register or begin registration (OTP)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone:
+                  type: string
+                name:
+                  type: string
+      responses:
+        '200':
+          description: OTP sent / temp user created
+  /auth/verify:
+    post:
+      summary: Verify OTP and issue tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                temp_user_id:
+                  type: string
+                otp:
+                  type: string
+      responses:
+        '200':
+          description: tokens
+  /auth/token/refresh:
+    post:
+      summary: Refresh access token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        '200':
+          description: new tokens
+  /sync/reports:
+    post:
+      summary: Upload batched reports from client (idempotent)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reports:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ReportInput'
+                attachments:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      client_attachment_id:
+                        type: string
+                      filename:
+                        type: string
+                      content_type:
+                        type: string
+                      size:
+                        type: integer
+      responses:
+        '200':
+          description: mapping of client IDs to server IDs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mappings:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        client_id:
+                          type: string
+                        server_id:
+                          type: string
+                        reference_number:
+                          type: string
+  /reports:
+    post:
+      summary: Create a report (online)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportInput'
+      responses:
+        '201':
+          description: created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportResponse'
+    get:
+      summary: List reports (role-limited)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: list
+  /reports/{report_id}:
+    get:
+      summary: Get report detail
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: report_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: report
+  /reports/{report_id}/attachments:
+    post:
+      summary: Initiate attachment upload (returns signed URL)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: report_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                filename:
+                  type: string
+                content_type:
+                  type: string
+                size:
+                  type: integer
+      responses:
+        '200':
+          description: signed upload URL
+  /cases/{case_id}/updates:
+    post:
+      summary: Add case update/note
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: case_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                update_type:
+                  type: string
+      responses:
+        '201':
+          description: created
+  /analytics/exports:
+    post:
+      summary: Create anonymized export (async)
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                filters:
+                  type: object
+      responses:
+        '202':
+          description: export job accepted

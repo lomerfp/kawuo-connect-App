@@ -1,0 +1,29 @@
+@startuml
+left to right direction
+actor "Community User" as User
+actor "Case Officer" as Officer
+actor "Case Manager" as Manager
+actor "MEAL Officer" as MEAL
+actor "Admin" as Admin
+actor "External Services" as External
+
+User --> (Register / Login)
+User --> (Create Report)
+User --> (Attach Evidence)
+User --> (Track Case)
+User --> (Receive Updates)
+User --> (Emergency Help)
+
+Officer --> (View Assigned Cases)
+Officer --> (Update Case Status)
+Officer --> (Add Follow-up Note)
+Manager --> (Assign Case)
+Manager --> (Change Priority)
+Manager --> (Refer Case)
+MEAL --> (Generate Analytics)
+Admin --> (Configure System)
+External --> (Send Push/SMS)
+
+(Create Report) .> (Synchronize) : <<include>>
+(Synchronize) .> External : <<include>>
+@enduml
